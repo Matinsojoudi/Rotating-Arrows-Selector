@@ -9,32 +9,40 @@ screen_width = info.current_w
 screen_height = info.current_h
 
 screen = pygame.display.set_mode((screen_width, screen_height))
-
 pygame.display.set_caption("گردونه شانس")
 
+# رنگ‌ها
+black = (0, 0, 0)
 white = (255, 255, 255)
 
+# بارگذاری تصویر پس‌زمینه بدون تغییر اندازه
 try:
     background_image = pygame.image.load("background.png")
     bg_width, bg_height = background_image.get_size()
 
-    min_screen_dim = min(screen_width, screen_height)
-    min_bg_dim = min(bg_width, bg_height)
+    # بررسی کوچکترین بعد و مرکز کردن تصویر بدون فشرده‌سازی
+    if bg_width > bg_height:
+        scale_factor = screen_width / bg_width
+        new_bg_width = screen_width
+        new_bg_height = int(bg_height * scale_factor)
+    else:
+        scale_factor = screen_height / bg_height
+        new_bg_height = screen_height
+        new_bg_width = int(bg_width * scale_factor)
 
-    scale_factor = min_screen_dim / min_bg_dim
-
-    new_bg_width = int(bg_width * scale_factor)
-    new_bg_height = int(bg_height * scale_factor)
-    
+    # تصویر را به نسبت مناسب تغییر اندازه می‌دهیم (بدون فشرده‌سازی)
     background_image = pygame.transform.scale(background_image, (new_bg_width, new_bg_height))
 
+    # محاسبه موقعیت تصویر پس‌زمینه برای مرکز کردن آن
     bg_x = (screen_width - new_bg_width) // 2
     bg_y = (screen_height - new_bg_height) // 2
+
 except pygame.error as e:
     print(f"Error loading background image: {e}")
     pygame.quit()
     exit()
 
+# بارگذاری تصویر دکمه شروع
 try:
     start_button_image = pygame.image.load("start_button.png")
 except pygame.error as e:
@@ -42,10 +50,11 @@ except pygame.error as e:
     pygame.quit()
     exit()
 
+# بارگذاری تصویر فلش
 try:
     arrow_image = pygame.image.load("arrow.png")
 except pygame.error as e:
-    print(f"Error loading image: {e}")
+    print(f"Error loading arrow image: {e}")
     pygame.quit()
     exit()
 
@@ -62,32 +71,18 @@ speed = 10
 deceleration = 0.05
 arrow_selected_angle = None
 game_started = False
-fullscreen = False
-
-# تعداد بخش‌ها و زاویه هر بخش
-num_sections = 30
-section_angle = 360 / num_sections
-
-# خطای مجاز
-angle_correction_threshold = 2  # درجه مجاز برای تنظیم خطا
+bg_color = black
 
 def choose_random_angle():
-    section = random.randint(0, num_sections - 1)
-    return section * section_angle
+    return random.randint(0, 360)
 
 def normalize_angle(angle):
     return angle % 360
 
-def correct_angle(angle):
-    mod_angle = angle % section_angle
-    if mod_angle < angle_correction_threshold:
-        return angle - mod_angle
-    elif mod_angle > section_angle - angle_correction_threshold:
-        return angle + (section_angle - mod_angle)
-    return angle
-
 while running:
-    screen.blit(background_image, (bg_x, bg_y))
+    screen.fill(bg_color)  # پر کردن صفحه با رنگ پس‌زمینه
+
+    screen.blit(background_image, (bg_x, bg_y))  # رسم تصویر پس‌زمینه
 
     if not game_started:
         start_button_rect = start_button_image.get_rect(center=(center_x, center_y))
@@ -99,7 +94,7 @@ while running:
             rotation_angle = 0
             speed = 10
             start_time = time.time()
-    
+
     else:
         current_time = time.time()
         if arrow_selected_angle is None:
@@ -112,7 +107,6 @@ while running:
         if arrow_selected_angle is not None:
             target_angle = normalize_angle(arrow_selected_angle)
             current_angle = normalize_angle(rotation_angle)
-
             angle_difference = (target_angle - current_angle + 360) % 360
 
             if angle_difference < 180:
@@ -121,7 +115,7 @@ while running:
                 rotation_angle -= speed
 
             if abs(angle_difference) < speed:
-                rotation_angle = correct_angle(arrow_selected_angle)
+                rotation_angle = arrow_selected_angle
                 game_started = False
                 time.sleep(2)
 
@@ -137,7 +131,7 @@ while running:
             if event.key == pygame.K_e:
                 running = False
 
-            if event.key == pygame.K_RETURN:  # دکمه اینتر برای شروع بازی
+            if event.key == pygame.K_RETURN:
                 game_started = True
                 arrow_selected_angle = None
                 rotation_angle = 0
@@ -145,11 +139,17 @@ while running:
                 start_time = time.time()
 
             if event.key == pygame.K_SPACE:
-                fullscreen = not fullscreen
+                fullscreen = not pygame.display.get_surface().get_flags() & pygame.FULLSCREEN
                 if fullscreen:
                     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
                 else:
                     screen = pygame.display.set_mode((screen_width, screen_height))
                 pygame.display.set_caption("گردونه شانس")
+
+            if event.key == pygame.K_w:
+                bg_color = white  # تغییر رنگ پس‌زمینه به سفید
+
+            if event.key == pygame.K_b:
+                bg_color = black  # تغییر رنگ پس‌زمینه به سیاه
 
 pygame.quit()
