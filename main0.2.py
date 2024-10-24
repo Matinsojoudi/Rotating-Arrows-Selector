@@ -64,11 +64,27 @@ arrow_selected_angle = None
 game_started = False
 fullscreen = False
 
+# تعداد بخش‌ها و زاویه هر بخش
+num_sections = 30
+section_angle = 360 / num_sections
+
+# خطای مجاز
+angle_correction_threshold = 2  # درجه مجاز برای تنظیم خطا
+
 def choose_random_angle():
-    return random.randint(0, 360)
+    section = random.randint(0, num_sections - 1)
+    return section * section_angle
 
 def normalize_angle(angle):
     return angle % 360
+
+def correct_angle(angle):
+    mod_angle = angle % section_angle
+    if mod_angle < angle_correction_threshold:
+        return angle - mod_angle
+    elif mod_angle > section_angle - angle_correction_threshold:
+        return angle + (section_angle - mod_angle)
+    return angle
 
 while running:
     screen.blit(background_image, (bg_x, bg_y))
@@ -83,6 +99,7 @@ while running:
             rotation_angle = 0
             speed = 10
             start_time = time.time()
+    
     else:
         current_time = time.time()
         if arrow_selected_angle is None:
@@ -104,7 +121,7 @@ while running:
                 rotation_angle -= speed
 
             if abs(angle_difference) < speed:
-                rotation_angle = arrow_selected_angle
+                rotation_angle = correct_angle(arrow_selected_angle)
                 game_started = False
                 time.sleep(2)
 
@@ -115,9 +132,18 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_e:
                 running = False
+
+            if event.key == pygame.K_RETURN:  # دکمه اینتر برای شروع بازی
+                game_started = True
+                arrow_selected_angle = None
+                rotation_angle = 0
+                speed = 10
+                start_time = time.time()
+
             if event.key == pygame.K_SPACE:
                 fullscreen = not fullscreen
                 if fullscreen:
